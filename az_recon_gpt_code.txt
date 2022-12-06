@@ -1,0 +1,223 @@
+import argparse
+import json
+import requests
+import sys
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--domain', '-d', help='A single domain')
+    parser.add_argument('--domain-list', '-dl', help='A text file containing a list of domains')
+    parser.add_argument('--username', '-u', help='A single username')
+    parser.add_argument('--username-list', '-ul', help='A text file containing a list of usernames')
+    parser.add_argument('--password', '-p', help='A password')
+    parser.add_argument('--credential', '-c', help='A single set of credentials in the form of username:password')
+    parser.add_argument('--credential-list', '-cl', help='A text file containing a list of credentials in the form of username:password')
+    parser.add_argument('--mode', '-m', choices=['getcredtype', 'oauthtoken', 'all'], help='The mode to run the script in')
+    return parser.parse_args()
+
+def get_domains(domain, domain_list):
+    if domain:
+        return [domain]
+    elif domain_list:
+        with open(domain_list, 'r') as f:
+            return [line.strip() for line in f]
+    else:
+        raise ValueError('Please provide a domain or a domain list')
+
+def get_usernames(username, username_list):
+    if username:
+        return [username]
+    elif username_list:
+        with open(username_list, 'r') as f:
+            return [line.strip() for line in f]
+    else:
+        raise ValueError('Please provide a username or a username list')
+
+def get_password(password):
+    if password:
+        return password
+    else:
+        raise ValueError('Please provide a password')
+
+def get_credentials(credential, credential_list):
+    if credential:
+        return [credential]
+    elif credential_list:
+        with open(credential_list, 'r') as f:
+            return [line.strip()
+            
+            
+it stopped here...
+
+====
+
+import argparse
+import json
+import requests
+
+def get_arguments():
+parser = argparse.ArgumentParser()
+parser.add_argument('--domain', '-d', help='Single domain to be queried')
+parser.add_argument('--domain-list', '-dl', help='Text file containing a list of domains to be queried')
+parser.add_argument('--username', '-u', help='Single username (email address) to be queried')
+parser.add_argument('--username-list', '-ul', help='Text file containing a list of usernames (email addresses) to be queried')
+parser.add_argument('--password', '-p', help='Password to be used for single username')
+parser.add_argument('--credential', '-c', help='Credential in the form of username:password')
+parser.add_argument('--credential-list', '-cl', help='Text file containing a list of credentials in the form of username:password')
+parser.add_argument('--getcredtype', action='store_true', help='Run script in getcredtype mode')
+parser.add_argument('--oauthtoken', action='store_true', help='Run script in oauthtoken mode')
+parser.add_argument('--all', '-a', action='store_true', help='Run script in all modes')
+args = parser.parse_args()
+return args
+
+def check_domain_managed(domain):
+url = f'https://login.microsoftonline.com/getuserrealm.srf?login={domain}&json=1'
+response = requests.get(url)
+response_json = response.json()
+if response_json['NameSpaceType'] != 'Managed':
+print('Warning: domain is not managed by Azure as the Identity Provider.')
+choice = input('Do you want to continue execution? (y/n) ')
+if choice == 'n':
+exit()
+
+def get_credential_type(domain, username):
+url = 'https://login.microsoftonline.com/common/GetCredentialType'
+payload = {'Username': username}
+response = requests.post(url, json=payload)
+response_json = response.json()
+if response_json['IfExistsResult'] == 0:
+print(f'Username {username} exists on Azure as a managed domain.')
+elif response_json['IfExistsResult'] == 1:
+print(f'Username {username} does not exist on Azure as a managed domain.')
+else:
+print(f'Username {username} exists on Azure but uses an Identity Provider other than Azure.')
+if response_json['ThrottleStatus'] == 2:
+print('Warning: response is being throttled.')
+else:
+print('Credential type:', response_json['CredentialType'])
+
+def get_oauth_token(domain, credential):
+url = f'https://login.microsoftonline.com/{domain}/oauth2/v2.0/token'
+payload = {'username': credential[0], 'password': credential[1], 'grant_type': '
+
+it stopped here...
+
+
+===
+
+import argparse
+import json
+import requests
+import warnings
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-d", "--domain", help="Provide a single domain")
+parser.add_argument("-dl", "--domain-list", help="Provide a text file containing a list of domains")
+parser.add_argument("-u", "--username", help="Provide a single email address for the username")
+parser.add_argument("-ul", "--username-list", help="Provide a text file containing a list of email addresses for the usernames")
+parser.add_argument("-p", "--password", help="Provide a password if a single username is provided")
+parser.add_argument("-c", "--credential", help="Provide a single set of credentials in the form of username:password")
+parser.add_argument("-cl", "--credential-list", help="Provide a text file containing a list of credentials in the form of username:password")
+parser.add_argument("--getcredtype", action="store_true", help="Run the script in the getcredtype mode")
+parser.add_argument("--oauthtoken", action="store_true", help="Run the script in the oauthtoken mode")
+parser.add_argument("-a", "--all", action="store_true", help="Run the script in both getcredtype and oauthtoken modes")
+
+args = parser.parse_args()
+
+def check_domain_type(domain):
+# Query the getuserrealm.srf endpoint to check if the domain is managed on Azure
+response = requests.get(f"https://login.microsoftonline.com/getuserrealm.srf?login={domain}&json=1")
+data = json.loads(response.text)
+if data["NameSpaceType"] == "Managed":
+return True
+else:
+warnings.warn("The provided domain is not managed on Azure. Results may not be accurate.")
+return False
+
+def get_credential_type(username):
+# Generate a POST request to the endpoint GetCredentialType
+data = {"Username": username}
+response = requests.post("https://login.microsoftonline.com/common/GetCredentialType", json=data)
+result = json.loads(response.text)
+# Evaluate the response
+if result["IfExistsResult"] == 0:
+print(f"Username: {username} exists as a managed domain on Azure.")
+elif result["IfExistsResult"] == 1:
+print(f"Username: {username} does not exist on Azure.")
+else:
+print(f"Username: {username} exists but uses an Identity Provider other than Azure.")
+if result["ThrottleStatus"] == 2:
+warnings.warn("The response is being throttled.")
+
+def get_oauth_token(username, password):
+# Generate a POST request to the endpoint OAuth/token
+data = {
+"grant_type": "password",
+"username": username,
+"password": password
+}
+response = requests.post("https://login.microsoftonline.com/common/oauth2/token", data=data)
+result
+
+it stopped here...
+
+====
+
+import argparse
+import requests
+import json
+
+def parse_arguments():
+# Define command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--domain", "-d", help="A single domain")
+parser.add_argument("--domain-list", "-dl", help="A text file containing a list of domains")
+parser.add_argument("--username", "-u", help="A single email address as the username")
+parser.add_argument("--username-list", "-ul", help="A text file containing a list of email addresses as usernames")
+parser.add_argument("--password", "-p", help="A password for the provided username")
+parser.add_argument("--credential", "-c", help="A single set of credentials in the form of username:password")
+parser.add_argument("--credential-list", "-cl", help="A text file containing a list of credentials in the form of username:password")
+parser.add_argument("--getcredtype", help="Run the script in the 'getcredtype' mode", action="store_true")
+parser.add_argument("--oauthtoken", help="Run the script in the 'oauthtoken' mode", action="store_true")
+parser.add_argument("--all", "-a", help="Run the script in both 'getcredtype' and 'oauthtoken' modes", action="store_true")
+
+# Parse arguments
+args = parser.parse_args()
+return args
+
+def validate_inputs(args):
+# Check if user has provided domain input
+if not args.domain and not args.domain_list:
+raise ValueError("Please provide a domain or a list of domains using the '--domain' or '--domain-list' flags.")
+
+# Check if user has provided username input
+if not args.username and not args.username_list:
+    raise ValueError("Please provide a username or a list of usernames using the '--username' or '--username-list' flags.")
+
+# Check if user has provided password if only a single username is provided
+if args.username and not args.password:
+    raise ValueError("Please provide a password for the provided username using the '--password' flag.")
+
+# Check if user has provided credentials if not providing password for single username
+if not args.credential and not args.credential_list and not args.password:
+    raise ValueError("Please provide a single set of credentials using the '--credential' flag or a list of credentials using the '--credential-list' flag.")
+
+# Check if user has provided mode for script to run in
+if not args.getcredtype and not args.oauthtoken and not args.all:
+    raise ValueError("Please provide a mode for the script to run in using the '--getcredtype', '--oauthtoken', or '--all' flags.")
+
+def check_managed_domain(domain):
+# Query the getuserrealm.srf endpoint
+url = f"https://login.microsoftonline.com/getuserrealm.srf?login={domain}&json=1"
+response = requests.get(url)
+
+# Parse the response as JSON
+data = json.loads(
+
+it stopped here...
+
+====
+
+
+
+

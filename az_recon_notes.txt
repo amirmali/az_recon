@@ -1,0 +1,46 @@
+Write me a Python script conforming to the PEP 8 style guide that does the following:
+
+- Has options for a user to provide as input a single domain (use --domain and -d as the flags/arguments) or a text file containing a list of domains (use --domain-list and -dl as flags/arguments). Throw an informative error if the domain(s) are provided in an incorrect format.
+
+- Has options for a user to provide as input a single username (use --username and -u as flags/arguments) or a text file containing a list of usernames (use --username-list and -ul as flags/arguments). The usernames should be email addresses. Throw an informative error if the usernames are provided in an incorrect format.
+
+- Has option for a user to provide a password (use --password and -p as flags/arguments) if the user inputs a single username instead of a list of usernames.
+
+- Has option for user to provide a single set of credentials (use --credential or -c as flags/arguments) a list of credentials in a text file (use --credential-list or -cl as flags/arguments). The credentials should be in the form of username:password. Throw an informative error if the input is in an incorrect format.
+
+- Has the option for the user to run the script in 3 different modes. The first mode is "getcredtype" (use the flag/arugment --getcredtype). The user must pass in at least a domain (or list of domains) and username (or list of usernames) for this mode. The second mode is "oauthtoken" (use flag/argument --oauthtoken). The user must pass in at least a domain (or list of domains), a single username and single password, or a credential, or a list of credentials. THe user cannot provide both username and password along with credential(s), it should be one set or the other. The final mode is "all" (--all and -a as flags/arguments), in which case the script runs both modes and checks for all the required inputs. Throw informative errors for any missing arguments depending on the selected mode.  
+
+- Given these inputs, the scripts should do the following for the "getcredtype" mode:
+
+-- Step 1 - Ensure that hte domain is "Managed" on Azure
+
+We must first ensure that the domain for this tenant is managed on Azure as the Identity Provider. This will ensure that the results returned are correct. To do this, query the getuserrealm.srf endpoint and look for the "NameSpaceType" returning a value of "Managed" (replace <DOMAIN> with the domain supplied by the user). Here is what it will look like in curl (but do this in a Pythonic way):
+
+curl -s https://login.microsoftonline.com/getuserrealm.srf\?login\=<DOMAIN>\&\json\=1 | jq .NameSpaceType
+
+Other possible values include "Unknown" and "Federated". If the value for the key is not "Managed", this indicates that the domain is not managed by Azure as the Identity Provider. Throw an informative warning if this is the case and pause the script and ask the user if they would like to continue execution given this information or if they would like to quit.
+
+-- Step 2: Generate a POST request to the endpoint GetCredentialType
+
+Generate the request and rotate in the username desired for the query and query the "IfExistsResult" key's value and the "ThrottleStatus" key's value. Here is what it will look like using curl (but do this in a Pythonic way instead);
+
+curl -s -X POST https://login.microsoftonline.com/common/GetCredentialType --data '{"Username":"<USERNAME>"' | jq '. | "Username: \(.Username) IfExists Result: \(.IfExistsResult) Throttle Result: \(.ThrottleStatus)"'
+
+In Step 2, we want to evaluate the response as follows:
+--- If the value for "IfExistsResult" is not 0, the user exists on Azure as a managed domain. This means that Azure is the Identity Provider for the domain. If the value is 1, the user does not exist. If the value is anything else, the account exists but uses an Identity Provider other than Azure. Let the user know this result in a concise and informative way.
+
+--- If the value for "ThrottleStatus" is 2, throw a warning that the response is being throttled. Otherwise, do not throw a warning and tell the user that Azure is not throttling the response.
+
+- For the "oauthtoken" mode, query the OAuthToken endpoint, rotating the username and password into the request. An example of this using curl is as follows:
+
+curl -i -s -k -X $'POST' \
+-H $'Content-Type: application/x-www-form-urlencoded' --data \
+$'client_id=CLIENT_ID&grant_type=password&client_info=1&username=<USERNAME>&password=PASSWORD&scope=SCOPE' \
+$'https://login.microsoftonline.com/organizations/oauth2/v2.0/token'
+
+- For the "all" mode, do everything in "getcredtype" and "oauthtoken" modes.
+
+- Provide the responses and outputs for everything in a neat, human-readable format.
+
+- Provide an informative help and usage menu.
+
